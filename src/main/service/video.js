@@ -83,6 +83,44 @@ function makeVideo(videoId) {
   return videoId
 }
 
+function normalizeMediaPathForF2F(mediaPath, fieldName) {
+  if (!mediaPath) {
+    throw new Error(`${fieldName} is empty`)
+  }
+
+  const originalPath = mediaPath
+  let relativePath = mediaPath
+
+  if (path.isAbsolute(relativePath)) {
+    relativePath = path.relative(assetPath.model, relativePath)
+  }
+
+  relativePath = relativePath.replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) {
+    throw new Error(`${fieldName} is outside asset root: ${originalPath}`)
+  }
+
+  const localPath = path.isAbsolute(originalPath)
+    ? originalPath
+    : path.join(assetPath.model, relativePath)
+
+  if (!fs.existsSync(localPath)) {
+    throw new Error(`${fieldName} file not found: ${localPath}`)
+  }
+
+  return relativePath
+}
+
+function resolveF2FMediaUrl(relativePath) {
+  if (/^https?:\/\//i.test(relativePath)) {
+    return relativePath
+  }
+
+  const mediaRoot = (process.env.HEYGEM_FACE2FACE_MEDIA_ROOT || '/code/data/temp').replace(/\\/g, '/')
+  return path.posix.join(mediaRoot, relativePath.replace(/\\/g, '/'))
+}
+
 export async function synthesisVideo(videoId) {
   try{
     update({
@@ -117,14 +155,13 @@ export async function synthesisVideo(videoId) {
       log.debug('~ makeVideo ~ audioPath:', audioPath)
     }
 
+    const normalizedAudioPath = normalizeMediaPathForF2F(audioPath, 'audio_path')
+    const normalizedVideoPath = normalizeMediaPathForF2F(model.video_path, 'video_path')
+    const f2fAudioUrl = resolveF2FMediaUrl(normalizedAudioPath)
+    const f2fVideoUrl = resolveF2FMediaUrl(normalizedVideoPath)
+
     // 调用视频生成接口生成视频
-    let result, param
-    if (process.env.NODE_ENV === 'development') {
-      // 写死调试
-      ({ result, param } = await makeVideoByF2F('test.wav', 'test.mp4'))
-    } else {
-      ({ result, param } = await makeVideoByF2F(audioPath, model.video_path))
-    }
+    const { result, param } = await makeVideoByF2F(f2fAudioUrl, f2fVideoUrl)
 
     log.debug('~ makeVideo ~ result, param:', result, param)
 
@@ -134,7 +171,7 @@ export async function synthesisVideo(videoId) {
         id: videoId,
         file_path: null,
         status: 'pending',
-        message: result,
+        message: result.msg,
         audio_path: audioPath,
         param,
         code: param.code
@@ -170,9 +207,16 @@ export async function loopPending() {
     return
   }
 
+  if (!video.code) {
+    setTimeout(() => {
+      loopPending()
+    }, 2000)
+    return video
+  }
+
   const statusRes = await getVideoStatus(video.code)
 
-  if ([9999, 10002, 10003].includes(statusRes.code)) {
+  if ([9999, 10002, 10003, 10004].includes(statusRes.code)) {
     updateStatus(video.id, 'failed', statusRes.msg)
   } else if (statusRes.code === 10000) {
     if (statusRes.data.status === 1) {

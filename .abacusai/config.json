@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build *)",
+      "Bash(npm install 2>& *)",
+      "Bash(npm run lint *)",
+      "Bash(git *)",
+      "Bash(docker exec heygem-tts *)",
+      "Bash(docker compose *)",
+      "Bash($ts *)",
+      "Bash(powershell *)",
+      "Bash(npm run build 2>&1 || true)",
+      "Bash(npm run lint 2>&1 || true)",
+      "Bash(npm run build 2>&1 || true)",
+      "Bash(npm run lint 2>&1 || true)"
+    ]
+  },
+  "additionalDirectories": [
+    "C:\\Users\\hai\\.abacusai\\tmp\\codellm-prompt-PW2rW7",
+    "C:\\Users\\hai\\.abacusai\\tmp\\codellm-prompt-aDotq2",
+    "C:\\Users\\hai\\.abacusai\\tmp\\codellm-prompt-jAxi9X",
+    "c:\\Users\\hai\\AppData\\Roaming\\heygem.ai\\logs"
+  ]
+}

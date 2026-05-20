@@ -36,7 +36,9 @@ services:
               count: all
               capabilities: [gpu]
     networks:
-      - ai_network
+      ai_network:
+        aliases:
+          - duix-avatar-asr
   heygem-gen-video:
     image: guiji2025/heygem.ai
     container_name: heygem-gen-video

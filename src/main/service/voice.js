@@ -22,12 +22,19 @@ export async function train(path, lang = 'zh') {
     lang
   })
   log.debug('~ train ~ res:', res)
-  if (res.code !== 0) {
+
+  const payload = res?.data || res
+  if (!payload || (payload.code !== undefined && payload.code !== 0)) {
     return false
-  } else {
-    const { asr_format_audio_url, reference_audio_text } = res
-    return insert({ origin_audio_path: path, lang, asr_format_audio_url, reference_audio_text })
   }
+
+  const asr_format_audio_url = payload.asr_format_audio_url
+  const reference_audio_text = payload.reference_audio_text
+  if (!asr_format_audio_url || !reference_audio_text) {
+    return false
+  }
+
+  return insert({ origin_audio_path: path, lang, asr_format_audio_url, reference_audio_text })
 }
 
 export function makeAudio4Video({voiceId, text}) {

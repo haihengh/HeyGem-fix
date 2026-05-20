@@ -1,11 +1,34 @@
 import { connect } from '../db/index.js'
 
+function normalizeBindValue(value) {
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (Buffer.isBuffer(value)) {
+    return value
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
+    return value
+  }
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0
+  }
+  return JSON.stringify(value)
+}
+
 export function insert({ modelName, videoPath, audioPath, voiceId }) {
   const db = connect()
   const stmt = db.prepare(
     'INSERT INTO f2f_model (name, video_path, audio_path, voice_id, created_at) VALUES (?, ?, ?, ?, ?)'
   )
-  const info = stmt.run(modelName, videoPath, audioPath, voiceId, Date.now())
+  const normalizedVoiceId = Number.isFinite(Number(voiceId)) ? Number(voiceId) : null
+  const info = stmt.run(
+    normalizeBindValue(modelName),
+    normalizeBindValue(videoPath),
+    normalizeBindValue(audioPath),
+    normalizeBindValue(normalizedVoiceId),
+    Date.now()
+  )
   return info.lastInsertRowid
 }
 

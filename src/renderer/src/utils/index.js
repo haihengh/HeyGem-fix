@@ -17,7 +17,7 @@ export const wait = (time = 0) => {
 export const localUrl = {
   addFileProtocol(url) {
     if(url && !url.startsWith('file:')){
-      return `file://${url}`.replaceAll('\\', "\/")
+      return `file://${url}`.replaceAll('\\', "/")
     }
     return url
   },
